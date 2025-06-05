@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador XRP Responsivo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 1.8rem;
+    }
+
+    .form-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .lucro { color: green; font-weight: bold; }
+    .prejuizo { color: red; font-weight: bold; }
+
+    canvas {
+      margin-top: 20px;
+      background: white;
+      max-width: 100%;
+      height: auto;
+    }
+
+    #ultimaAtualizacao {
+      margin-top: 10px;
+      text-align: center;
+      font-style: italic;
+    }
+
+    @media (min-width: 600px) {
+      .form-container > div {
+        flex: 1 1 200px;
+      }
+    }
+
+    @media (max-width: 599px) {
+      input, button {
+        font-size: 0.95rem;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Simulador XRP Responsivo</h2>
+
+  <div class="form-container">
+    <div>
+      <label for="valorReais">Valor investido (R$)</label>
+      <input type="number" id="valorReais" placeholder="Ex: 1000" min="1">
+    </div>
+
+    <div>
+      <label for="intervaloSegundos">Atualização (segundos)</label>
+      <input type="number" id="intervaloSegundos" value="30" min="30" max="600">
+    </div>
+
+    <div class="button-group">
+      <button onclick="simular()">Simular</button>
+      <button onclick="parar()">Parar</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="resultado">
+      <thead>
+        <tr>
+          <th>Momento</th>
+          <th>Investimento</th>
+          <th>Dólar</th>
+          <th>XRP (USD)</th>
+          <th>XRP (R$)</th>
+          <th>Qtd XRP</th>
+          <th>Valor Atual</th>
+          <th>Lucro / Prejuízo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="linhaInicial"><td colspan="8">-</td></tr>
+        <tr id="linhaAtual"><td colspan="8">-</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p id="ultimaAtualizacao"></p>
+  <canvas id="grafico" width="800" height="300"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const API_KEY = 'f2bd40ee5275403d9fcdfdc55f71d6b7';
+    let chart, intervalo, valorReaisAtual = null, precoInicial = null, quantidadeXRP = null;
+
+    async function buscarCotacoes() {
+      try {
+        const [xrp, usd] = await Promise.all([
+          fetch(`https://api.twelvedata.com/price?symbol=XRP/USD&apikey=${API_KEY}`),
+          fetch(`https://api.twelvedata.com/price?symbol=USD/BRL&apikey=${API_KEY}`)
+        ]);
+
+        const xrpData = await xrp.json();
+        const usdData = await usd.json();
+
+        return {
+          precoXRPUSD: parseFloat(xrpData.price),
+          cotacaoDolar: parseFloat(usdData.price)
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    async function simular() {
+      if (intervalo) {
+        alert("Simulação já em andamento.");
+        return;
+      }
+
+      valorReaisAtual = parseFloat(document.getElementById('valorReais').value);
+      const intervaloSeg = parseInt(document.getElementById('intervaloSegundos').value);
+
+      if (!valorReaisAtual || valorReaisAtual <= 0) return alert("Valor inválido.");
+      if (intervaloSeg < 30 || intervaloSeg > 600) return alert("Intervalo entre 30 e 600.");
+
+      if (!chart) iniciarGrafico();
+
+      const precos = await buscarCotacoes();
+      if (!precos) return alert("Erro ao buscar dados.");
+
+      precoInicial = precos.precoXRPUSD * precos.cotacaoDolar;
+      quantidadeXRP = valorReaisAtual / precoInicial;
+
+      document.getElementById('linhaInicial').innerHTML = `
+        <td>Inicial</td>
+        <td>R$ ${valorReaisAtual.toFixed(2)}</td>
+        <td>${precos.cotacaoDolar.toFixed(4)}</td>
+        <td>US$ ${precos.precoXRPUSD.toFixed(4)}</td>
+        <td>R$ ${precoInicial.toFixed(4)}</td>
+        <td>${quantidadeXRP.toFixed(4)}</td>
+        <td>-</td>
+        <td>-</td>
+      `;
+
+      atualizarSimulacao();
+
+      intervalo = setInterval(atualizarSimulacao, intervaloSeg * 1000);
+    }
+
+    async function atualizarSimulacao() {
+      const precos = await buscarCotacoes();
+      if (!precos || valorReaisAtual === null) return;
+
+      const precoAtual = precos.precoXRPUSD * precos.cotacaoDolar;
+      const valorAtual = quantidadeXRP * precoAtual;
+      const lucro = valorAtual - valorReaisAtual;
+      const perc = (lucro / valorReaisAtual) * 100;
+      const classe = lucro >= 0 ? 'lucro' : 'prejuizo';
+
+      document.getElementById('linhaAtual').innerHTML = `
+        <td>Atual</td>
+        <td>R$ ${valorReaisAtual.toFixed(2)}</td>
+        <td>${precos.cotacaoDolar.toFixed(4)}</td>
+        <td>US$ ${precos.precoXRPUSD.toFixed(4)}</td>
+        <td>R$ ${precoAtual.toFixed(4)}</td>
+        <td>${quantidadeXRP.toFixed(4)}</td>
+        <td>R$ ${valorAtual.toFixed(2)}</td>
+        <td class="${classe}">${lucro >= 0 ? '+' : ''}R$ ${lucro.toFixed(2)} (${perc.toFixed(2)}%)</td>
+      `;
+
+      document.getElementById('ultimaAtualizacao').textContent =
+        "Última atualização: " + new Date().toLocaleString();
+
+      atualizarGrafico(precoAtual, precos.cotacaoDolar);
+    }
+
+    function iniciarGrafico() {
+      const ctx = document.getElementById('grafico').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Preço XRP (R$)',
+              data: [],
+              borderColor: 'blue',
+              fill: true,
+              yAxisID: 'y1'
+            },
+            {
+              label: 'Dólar',
+              data: [],
+              borderColor: 'green',
+              fill: true,
+              yAxisID: 'y2'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          animation: false,
+          scales: {
+            y1: { position: 'left', title: { display: true, text: 'XRP (R$)' }},
+            y2: { position: 'right', title: { display: true, text: 'Dólar (R$)' }, grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+    }
+
+    function atualizarGrafico(xrp, dolar) {
+      const tempo = new Date().toLocaleTimeString();
+      chart.data.labels.push(tempo);
+      chart.data.datasets[0].data.push(xrp);
+      chart.data.datasets[1].data.push(dolar);
+
+      if (chart.data.labels.length > 20) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+        chart.data.datasets[1].data.shift();
+      }
+      chart.update();
+    }
+
+    function parar() {
+      if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+        alert("Simulação parada.");
+      }
+    }
+  </script>
+</body>
+</html>
