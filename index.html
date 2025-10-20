@@ -60,26 +60,23 @@
   <script>
     let chart, intervalo, quantidadeXRP = null, precoInicial = null, valorInicialReais = null;
     const statusMsg = document.getElementById('statusMsg');
-    const API_URL = 'http://localhost:3000/api';
 
     async function buscarCotacoes() {
       try {
         const [xrp, usd] = await Promise.all([
-          fetch(`${API_URL}?symbol=XRP/USD`),
-          fetch(`${API_URL}?symbol=USD/BRL`)
+          fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd"),
+          fetch("https://api.coingecko.com/api/v3/simple/price?ids=usd&vs_currencies=brl")
         ]);
         const xrpData = await xrp.json();
         const usdData = await usd.json();
 
-        if (!xrpData.price || !usdData.price) throw new Error("Dados inválidos");
-
         return {
-          precoXRPUSD: parseFloat(xrpData.price),
-          cotacaoDolar: parseFloat(usdData.price)
+          precoXRPUSD: parseFloat(xrpData.ripple.usd),
+          cotacaoDolar: parseFloat(usdData.usd.brl)
         };
       } catch (err) {
         console.error(err);
-        statusMsg.textContent = "❌ Erro ao buscar cotações. Verifique sua conexão.";
+        statusMsg.textContent = "❌ Erro ao buscar cotações.";
         return null;
       }
     }
@@ -143,12 +140,6 @@
         "Última atualização: " + new Date().toLocaleString();
 
       atualizarGrafico(precoAtual, precos.cotacaoDolar);
-
-      // Histórico local
-      const historico = JSON.parse(localStorage.getItem("historicoXRP") || "[]");
-      historico.push({ tempo: new Date().toLocaleTimeString(), preco: precoAtual });
-      if (historico.length > 20) historico.shift();
-      localStorage.setItem("historicoXRP", JSON.stringify(historico));
     }
 
     function iniciarGrafico() {
@@ -199,7 +190,6 @@
     document.getElementById('btnParar').addEventListener('click', parar);
     window.addEventListener('beforeunload', () => clearInterval(intervalo));
 
-    // Restaura último intervalo salvo
     const ultimoIntervalo = localStorage.getItem("intervaloAtual");
     if (ultimoIntervalo) document.getElementById('intervaloSegundos').value = ultimoIntervalo;
   </script>
