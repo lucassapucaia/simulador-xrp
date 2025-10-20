@@ -4,238 +4,137 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Simulador XRP Responsivo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    h2 {
-      text-align: center;
-      font-size: 1.8rem;
-    }
-
-    .form-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 15px;
-      justify-content: center;
-    }
-
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    input, button {
-      padding: 10px;
-      font-size: 1rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    button {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .table-container {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-      min-width: 800px;
-    }
-
-    th, td {
-      padding: 8px;
-      border: 1px solid #ccc;
-      text-align: center;
-    }
-
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .lucro { color: green; font-weight: bold; }
-    .prejuizo { color: red; font-weight: bold; }
-
-    canvas {
-      margin-top: 20px;
-      background: white;
-      max-width: 100%;
-      height: auto;
-    }
-
-    #ultimaAtualizacao {
-      margin-top: 10px;
-      text-align: center;
-      font-style: italic;
-    }
-
-    @media (min-width: 600px) {
-      .form-container > div {
-        flex: 1 1 200px;
-      }
-    }
-
-    @media (max-width: 599px) {
-      input, button {
-        font-size: 0.95rem;
-      }
-
-      h2 {
-        font-size: 1.4rem;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <h2>Simulador XRP Responsivo</h2>
-
-  <div class="form-container">
-    <div>
-      <label for="valorReais">Valor investido (R$)</label>
-      <input type="number" id="valorReais" placeholder="Ex: 1000" min="1">
-    </div>
-
-    <div>
-      <label for="intervaloSegundos">Atualização (segundos)</label>
-      <input type="number" id="intervaloSegundos" value="30" min="30" max="600">
-    </div>
-
-    <div class="button-group">
-      <button onclick="simular()">Simular</button>
-      <button onclick="parar()">Parar</button>
-    </div>
-  </div>
-
-  <div class="table-container">
-    <table id="resultado">
-      <thead>
-        <tr>
-          <th>Momento</th>
-          <th>Investimento</th>
-          <th>Dólar</th>
-          <th>XRP (USD)</th>
-          <th>XRP (R$)</th>
-          <th>Qtd XRP</th>
-          <th>Valor Atual</th>
-          <th>Lucro / Prejuízo</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr id="linhaInicial"><td colspan="8">-</td></tr>
-        <tr id="linhaAtual"><td colspan="8">-</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <p id="ultimaAtualizacao"></p>
-  <canvas id="grafico" width="800" height="300"></canvas>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+  <main class="max-w-5xl mx-auto p-4">
+    <h2 class="text-2xl font-bold text-center mb-4">💰 Simulador XRP Responsivo</h2>
+
+    <section class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-md mb-6">
+      <div class="flex flex-wrap gap-4 justify-center">
+        <div class="flex-1 min-w-[200px]">
+          <label for="valorXRP" class="block font-semibold mb-1">Quantidade de XRP</label>
+          <input type="number" id="valorXRP" class="w-full p-2 rounded border" placeholder="Ex: 500" min="0.0001" step="0.0001">
+        </div>
+
+        <div class="flex-1 min-w-[200px]">
+          <label for="intervaloSegundos" class="block font-semibold mb-1">Atualização (segundos)</label>
+          <input type="number" id="intervaloSegundos" class="w-full p-2 rounded border" value="30" min="30" max="600">
+        </div>
+
+        <div class="flex flex-col justify-end gap-2">
+          <button id="btnSimular" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Simular</button>
+          <button id="btnParar" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Parar</button>
+        </div>
+      </div>
+      <p id="statusMsg" class="text-center mt-3 italic text-sm text-gray-500"></p>
+    </section>
+
+    <section class="overflow-x-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md">
+      <table class="min-w-[800px] w-full border-collapse text-sm md:text-base">
+        <thead class="bg-blue-600 text-white">
+          <tr>
+            <th class="p-2">Momento</th>
+            <th>XRP</th>
+            <th>Dólar (USD/BRL)</th>
+            <th>Preço XRP (USD)</th>
+            <th>Preço XRP (R$)</th>
+            <th>Valor Total (R$)</th>
+            <th>Lucro / Prejuízo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="linhaInicial"><td colspan="7" class="text-center p-2">-</td></tr>
+          <tr id="linhaAtual"><td colspan="7" class="text-center p-2">-</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <p id="ultimaAtualizacao" class="mt-3 text-center italic"></p>
+
+    <canvas id="grafico" class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-md w-full h-64"></canvas>
+  </main>
+
   <script>
-    const API_KEY = 'f2bd40ee5275403d9fcdfdc55f71d6b7';
-    let chart, intervalo, valorReaisAtual = null, precoInicial = null, quantidadeXRP = null;
+    let chart, intervalo, quantidadeXRP = null, precoInicial = null, valorInicialReais = null;
+    const statusMsg = document.getElementById('statusMsg');
+    const API_URL = 'http://localhost:3000/api';
 
     async function buscarCotacoes() {
       try {
         const [xrp, usd] = await Promise.all([
-          fetch(`https://api.twelvedata.com/price?symbol=XRP/USD&apikey=${API_KEY}`),
-          fetch(`https://api.twelvedata.com/price?symbol=USD/BRL&apikey=${API_KEY}`)
+          fetch(`${API_URL}?symbol=XRP/USD`),
+          fetch(`${API_URL}?symbol=USD/BRL`)
         ]);
-
         const xrpData = await xrp.json();
         const usdData = await usd.json();
+
+        if (!xrpData.price || !usdData.price) throw new Error("Dados inválidos");
 
         return {
           precoXRPUSD: parseFloat(xrpData.price),
           cotacaoDolar: parseFloat(usdData.price)
         };
-      } catch {
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = "❌ Erro ao buscar cotações. Verifique sua conexão.";
         return null;
       }
     }
 
     async function simular() {
-      if (intervalo) {
-        alert("Simulação já em andamento.");
-        return;
-      }
+      if (intervalo) return statusMsg.textContent = "⚠️ Simulação já em andamento.";
 
-      valorReaisAtual = parseFloat(document.getElementById('valorReais').value);
+      quantidadeXRP = parseFloat(document.getElementById('valorXRP').value);
       const intervaloSeg = parseInt(document.getElementById('intervaloSegundos').value);
 
-      if (!valorReaisAtual || valorReaisAtual <= 0) return alert("Valor inválido.");
-      if (intervaloSeg < 30 || intervaloSeg > 600) return alert("Intervalo entre 30 e 600.");
+      if (!quantidadeXRP || quantidadeXRP <= 0)
+        return statusMsg.textContent = "❗ Quantidade inválida. Informe um número maior que zero.";
+      if (intervaloSeg < 30 || intervaloSeg > 600)
+        return statusMsg.textContent = "❗ Intervalo deve estar entre 30 e 600 segundos.";
 
+      localStorage.setItem("intervaloAtual", intervaloSeg);
       if (!chart) iniciarGrafico();
 
       const precos = await buscarCotacoes();
-      if (!precos) return alert("Erro ao buscar dados.");
+      if (!precos) return;
 
       precoInicial = precos.precoXRPUSD * precos.cotacaoDolar;
-      quantidadeXRP = valorReaisAtual / precoInicial;
+      valorInicialReais = quantidadeXRP * precoInicial;
 
       document.getElementById('linhaInicial').innerHTML = `
         <td>Inicial</td>
-        <td>R$ ${valorReaisAtual.toFixed(2)}</td>
+        <td>${quantidadeXRP.toFixed(4)}</td>
         <td>${precos.cotacaoDolar.toFixed(4)}</td>
         <td>US$ ${precos.precoXRPUSD.toFixed(4)}</td>
         <td>R$ ${precoInicial.toFixed(4)}</td>
-        <td>${quantidadeXRP.toFixed(4)}</td>
-        <td>-</td>
+        <td>R$ ${valorInicialReais.toFixed(2)}</td>
         <td>-</td>
       `;
 
       atualizarSimulacao();
-
       intervalo = setInterval(atualizarSimulacao, intervaloSeg * 1000);
+      statusMsg.textContent = "✅ Simulação iniciada.";
     }
 
     async function atualizarSimulacao() {
       const precos = await buscarCotacoes();
-      if (!precos || valorReaisAtual === null) return;
+      if (!precos || quantidadeXRP === null) return;
 
       const precoAtual = precos.precoXRPUSD * precos.cotacaoDolar;
       const valorAtual = quantidadeXRP * precoAtual;
-      const lucro = valorAtual - valorReaisAtual;
-      const perc = (lucro / valorReaisAtual) * 100;
-      const classe = lucro >= 0 ? 'lucro' : 'prejuizo';
+      const lucro = valorAtual - valorInicialReais;
+      const perc = (lucro / valorInicialReais) * 100;
+      const classe = lucro >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
 
       document.getElementById('linhaAtual').innerHTML = `
         <td>Atual</td>
-        <td>R$ ${valorReaisAtual.toFixed(2)}</td>
+        <td>${quantidadeXRP.toFixed(4)}</td>
         <td>${precos.cotacaoDolar.toFixed(4)}</td>
         <td>US$ ${precos.precoXRPUSD.toFixed(4)}</td>
         <td>R$ ${precoAtual.toFixed(4)}</td>
-        <td>${quantidadeXRP.toFixed(4)}</td>
         <td>R$ ${valorAtual.toFixed(2)}</td>
         <td class="${classe}">${lucro >= 0 ? '+' : ''}R$ ${lucro.toFixed(2)} (${perc.toFixed(2)}%)</td>
       `;
@@ -244,6 +143,12 @@
         "Última atualização: " + new Date().toLocaleString();
 
       atualizarGrafico(precoAtual, precos.cotacaoDolar);
+
+      // Histórico local
+      const historico = JSON.parse(localStorage.getItem("historicoXRP") || "[]");
+      historico.push({ tempo: new Date().toLocaleTimeString(), preco: precoAtual });
+      if (historico.length > 20) historico.shift();
+      localStorage.setItem("historicoXRP", JSON.stringify(historico));
     }
 
     function iniciarGrafico() {
@@ -253,27 +158,15 @@
         data: {
           labels: [],
           datasets: [
-            {
-              label: 'Preço XRP (R$)',
-              data: [],
-              borderColor: 'blue',
-              fill: true,
-              yAxisID: 'y1'
-            },
-            {
-              label: 'Dólar',
-              data: [],
-              borderColor: 'green',
-              fill: true,
-              yAxisID: 'y2'
-            }
+            { label: 'XRP (R$)', data: [], borderColor: '#3b82f6', fill: false, yAxisID: 'y1' },
+            { label: 'Dólar', data: [], borderColor: '#10b981', fill: false, yAxisID: 'y2' }
           ]
         },
         options: {
           responsive: true,
           animation: false,
           scales: {
-            y1: { position: 'left', title: { display: true, text: 'XRP (R$)' }},
+            y1: { position: 'left', title: { display: true, text: 'XRP (R$)' } },
             y2: { position: 'right', title: { display: true, text: 'Dólar (R$)' }, grid: { drawOnChartArea: false } }
           }
         }
@@ -298,9 +191,17 @@
       if (intervalo) {
         clearInterval(intervalo);
         intervalo = null;
-        alert("Simulação parada.");
+        statusMsg.textContent = "⏹️ Simulação parada.";
       }
     }
+
+    document.getElementById('btnSimular').addEventListener('click', simular);
+    document.getElementById('btnParar').addEventListener('click', parar);
+    window.addEventListener('beforeunload', () => clearInterval(intervalo));
+
+    // Restaura último intervalo salvo
+    const ultimoIntervalo = localStorage.getItem("intervaloAtual");
+    if (ultimoIntervalo) document.getElementById('intervaloSegundos').value = ultimoIntervalo;
   </script>
 </body>
 </html>
