@@ -61,22 +61,28 @@
     let chart, intervalo, quantidadeXRP = null, precoInicial = null, valorInicialReais = null;
     const statusMsg = document.getElementById('statusMsg');
 
+    // Função para buscar via proxy público (contorna CORS)
+    async function buscarComProxy(url) {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      const data = await response.json();
+      return JSON.parse(data.contents);
+    }
+
     async function buscarCotacoes() {
       try {
         const [xrp, usd] = await Promise.all([
-          fetch("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd"),
-          fetch("https://api.coingecko.com/api/v3/simple/price?ids=usd&vs_currencies=brl")
+          buscarComProxy("https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd"),
+          buscarComProxy("https://api.coingecko.com/api/v3/simple/price?ids=usd&vs_currencies=brl")
         ]);
-        const xrpData = await xrp.json();
-        const usdData = await usd.json();
 
         return {
-          precoXRPUSD: parseFloat(xrpData.ripple.usd),
-          cotacaoDolar: parseFloat(usdData.usd.brl)
+          precoXRPUSD: parseFloat(xrp.ripple.usd),
+          cotacaoDolar: parseFloat(usd.usd.brl)
         };
       } catch (err) {
-        console.error(err);
-        statusMsg.textContent = "❌ Erro ao buscar cotações.";
+        console.error("Erro ao buscar cotações:", err);
+        statusMsg.textContent = "❌ Erro ao buscar cotações. Verifique sua conexão.";
         return null;
       }
     }
